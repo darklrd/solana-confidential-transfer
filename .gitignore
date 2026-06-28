@@ -1,0 +1,26 @@
+# === Secrets — NEVER commit ===
+# Local Solana keypairs (private keys live here)
+keys/
+*.keypair.json
+*-keypair.json
+id.json
+
+# Environment / config with secrets
+.env
+.env.local
+.env.*.local
+
+# === Node / build ===
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+*.log
+
+# === OS / editor ===
+.DS_Store
+.idea/
+.vscode/
+
+# === Local-only docs (not committed) ===
+docs/
