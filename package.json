@@ -1,0 +1,29 @@
+{
+  "name": "cipherflow",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A step-by-step TypeScript walkthrough of Solana Token-2022 Confidential Transfers, with a state inspector that decodes and decrypts confidential balances.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "check-env": "tsx scripts/00-check-env.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@solana-program/token-2022": "0.12.0",
+    "@solana/kit": "6.10.0",
+    "@solana/zk-sdk": "0.4.2",
+    "dotenv": "17.4.2",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "tsx": "4.22.4",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
+  }
+}

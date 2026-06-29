@@ -24,3 +24,4 @@ build/
 
 # === Local-only docs (not committed) ===
 docs/
+versions.md
