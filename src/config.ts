@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import {
   address,
   createSolanaRpc,
+  createSolanaRpcSubscriptions,
   createKeyPairSignerFromBytes,
 } from '@solana/kit';
 import { TOKEN_2022_PROGRAM_ADDRESS } from '@solana-program/token-2022';
@@ -20,10 +21,40 @@ export const PROGRAM_IDS = {
   zkElGamalProof: address('ZkE1Gama1Proof11111111111111111111111111111'),
 } as const;
 
-/** Create an RPC client against RPC_URL (local validator by default). */
+/** WebSocket endpoint for tx confirmation. Derived from RPC_URL if unset. */
+export const RPC_SUBSCRIPTIONS_URL =
+  process.env.RPC_SUBSCRIPTIONS_URL ?? RPC_URL.replace(/^http/, 'ws');
+
+/** Short cluster name inferred from RPC_URL (for explorer links + artifacts). */
+export const CLUSTER: 'devnet' | 'testnet' | 'mainnet-beta' | 'localnet' | 'custom' =
+  RPC_URL.includes('devnet')
+    ? 'devnet'
+    : RPC_URL.includes('testnet')
+      ? 'testnet'
+      : RPC_URL.includes('mainnet')
+        ? 'mainnet-beta'
+        : /127\.0\.0\.1|localhost/.test(RPC_URL)
+          ? 'localnet'
+          : 'custom';
+
+/** Create a read/write RPC client against the configured cluster (devnet by default). */
 export function getRpc() {
   return createSolanaRpc(RPC_URL);
 }
+
+/** Create an RPC-subscriptions client (used by sendAndConfirmTransactionFactory). */
+export function getRpcSubscriptions() {
+  return createSolanaRpcSubscriptions(RPC_SUBSCRIPTIONS_URL);
+}
+
+const explorerSuffix =
+  CLUSTER === 'mainnet-beta'
+    ? ''
+    : `?cluster=${CLUSTER === 'localnet' ? 'custom' : CLUSTER}`;
+export const explorerAddress = (a: string) =>
+  `https://explorer.solana.com/address/${a}${explorerSuffix}`;
+export const explorerTx = (sig: string) =>
+  `https://explorer.solana.com/tx/${sig}${explorerSuffix}`;
 
 /**
  * Load a Solana keypair signer from a CLI-format JSON file (64-byte array).

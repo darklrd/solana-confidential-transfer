@@ -10,6 +10,9 @@ id.json
 .env.local
 .env.*.local
 
+# === Run outputs (per-cluster addresses created by scripts) ===
+artifacts/
+
 # === Node / build ===
 node_modules/
 dist/
