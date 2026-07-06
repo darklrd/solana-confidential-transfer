@@ -17,6 +17,16 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 KEYS_DIR="$ROOT_DIR/keys"
 WALLET_NAME="${1:-wallet}"
+
+# Names must be simple filenames — no slashes, so no escaping keys/.
+# (Defense in depth: the gitignore guard below also refuses escaped paths,
+# but only when running inside a git repo.)
+if [[ ! "$WALLET_NAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  echo "❌ Invalid wallet name: '$WALLET_NAME'"
+  echo "   Use only letters, digits, dot, dash, underscore."
+  exit 1
+fi
+
 WALLET_PATH="$KEYS_DIR/$WALLET_NAME.json"
 
 mkdir -p "$KEYS_DIR"
