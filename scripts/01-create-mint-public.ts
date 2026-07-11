@@ -14,19 +14,7 @@
 //   -> initializeTokenMetadata      (name/symbol/uri, stored inside the mint account)
 //
 // Run: pnpm tsx scripts/01-create-mint-public.ts
-import {
-  appendTransactionMessageInstructions,
-  assertIsTransactionWithBlockhashLifetime,
-  createTransactionMessage,
-  generateKeyPairSigner,
-  getSignatureFromTransaction,
-  lamports,
-  pipe,
-  sendAndConfirmTransactionFactory,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
-} from '@solana/kit';
+import { generateKeyPairSigner, lamports } from '@solana/kit';
 import { getCreateAccountInstruction } from '@solana-program/system';
 import {
   TOKEN_2022_PROGRAM_ADDRESS,
@@ -41,10 +29,10 @@ import {
   explorerAddress,
   explorerTx,
   getRpc,
-  getRpcSubscriptions,
   loadKeypairSigner,
 } from '../src/config';
 import { saveArtifact } from '../src/artifacts';
+import { sendInstructions } from '../src/tx';
 
 const DECIMALS = 9;
 const TOKEN_NAME = 'shashtoken';
@@ -53,7 +41,6 @@ const TOKEN_URI = ''; // optionally a URL to richer JSON metadata (logo, descrip
 
 async function main() {
   const rpc = getRpc();
-  const rpcSubscriptions = getRpcSubscriptions();
   const payer = await loadKeypairSigner();
 
   console.log(`\n🪙  Creating public Token-2022 mint "${TOKEN_NAME}" (${TOKEN_SYMBOL}) on ${CLUSTER}`);
@@ -122,20 +109,7 @@ async function main() {
     }),
   ];
 
-  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-  const txMessage = pipe(
-    createTransactionMessage({ version: 0 }),
-    (m) => setTransactionMessageFeePayerSigner(payer, m),
-    (m) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
-    (m) => appendTransactionMessageInstructions(instructions, m),
-  );
-  const signedTx = await signTransactionMessageWithSigners(txMessage);
-  // Signing erases the specific lifetime brand; re-narrow to blockhash lifetime
-  // so the (blockhash-based) confirmer accepts it.
-  assertIsTransactionWithBlockhashLifetime(signedTx);
-  const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
-  await sendAndConfirm(signedTx, { commitment: 'confirmed' });
-  const signature = getSignatureFromTransaction(signedTx);
+  const signature = await sendInstructions(payer, instructions);
 
   // Read the mint back from chain and print the decoded state.
   const onchain = await fetchMint(rpc, mint.address);
