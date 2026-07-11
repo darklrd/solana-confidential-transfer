@@ -37,7 +37,7 @@ function pkgVersion(pkg: string): string | null {
 }
 
 async function main() {
-  console.log('\n🔍 cipherflow — Phase 0 environment check\n');
+  console.log('\n🔍 solana-confidential-transfer — Phase 0 environment check\n');
   let blocking = false;
 
   // 1. Toolchain

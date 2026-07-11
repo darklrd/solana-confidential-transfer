@@ -1,5 +1,5 @@
 {
-  "name": "cipherflow",
+  "name": "solana-confidential-transfer",
   "version": "0.0.0",
   "private": true,
   "description": "A step-by-step TypeScript walkthrough of Solana Token-2022 Confidential Transfers, with a state inspector that decodes and decrypts confidential balances.",

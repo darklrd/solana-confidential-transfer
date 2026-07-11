@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# create-wallet.sh — generate a local Solana keypair for cipherflow.
+# create-wallet.sh — generate a local Solana keypair for this project.
 #
 # The SECRET key is written to ./keys/ which is gitignored. The public address
 # is safe to share. This script refuses to write a secret unless the target
