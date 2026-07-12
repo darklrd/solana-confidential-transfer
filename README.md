@@ -61,6 +61,7 @@ Tests (`pnpm test`) run the full public lifecycle against devnet on a fresh thro
 | `02-create-account-public` | Derive the Associated Token Account (a PDA — an account with no private key), create it, mint supply |
 | `03-public-transfer` | An ordinary public transfer: the transparency baseline. The amount is plainly visible on any explorer |
 | `04-inspect-account` | Decode any token account: balance, state, and every extension present on the account and its mint |
+| `05-create-confidential-mint` | Create a mint with the ConfidentialTransferMint extension (must be set at creation — a public mint can never be upgraded). Auto-approve by default; `--manual-approve` to gate new accounts behind the authority |
 
 ## Roadmap
 
