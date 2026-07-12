@@ -45,7 +45,7 @@ export function formatAmount(raw: bigint, decimals: number): string {
   return frac ? `${whole}.${frac}` : `${whole}`;
 }
 
-function extensionKinds(extensions: { __option: 'Some'; value: Extension[] } | { __option: 'None' }): string[] {
+export function extensionKinds(extensions: { __option: 'Some'; value: Extension[] } | { __option: 'None' }): string[] {
   return extensions.__option === 'Some' ? extensions.value.map((e) => e.__kind) : [];
 }
 

@@ -62,14 +62,15 @@ Tests (`pnpm test`) run the full public lifecycle against devnet on a fresh thro
 | `03-public-transfer` | An ordinary public transfer: the transparency baseline. The amount is plainly visible on any explorer |
 | `04-inspect-account` | Decode any token account: balance, state, and every extension present on the account and its mint |
 | `05-create-confidential-mint` | Create a mint with the ConfidentialTransferMint extension (must be set at creation — a public mint can never be upgraded). Auto-approve by default; `--manual-approve` to gate new accounts behind the authority |
+| `06-inspect-mint` | Decode any mint; renders the public and confidential mints side by side — identical except for the one extension everything confidential hangs off |
 
 ## Roadmap
 
 | Phase | Content | Status |
 |---|---|---|
 | 0 | Environment + transparent baseline (public mint, transfer, inspector v0) | ✅ done |
-| 1 | Confidential-capable mint + mint inspector | ⏳ next |
-| 2 | ElGamal/AES keys + configure confidential account | — |
+| 1 | Confidential-capable mint + mint inspector | ✅ done |
+| 2 | ElGamal/AES keys + configure confidential account | ⏳ next |
 | 3 | Deposit (public → pending) + **owner decryption** of your own balance | — |
 | 4 | Apply (pending → available): why the two-step model exists | — |
 | 5 | The confidential transfer itself: three ZK proofs, context-state accounts | — |
