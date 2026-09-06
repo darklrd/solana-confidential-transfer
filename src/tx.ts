@@ -4,6 +4,8 @@ import {
   appendTransactionMessageInstructions,
   assertIsTransactionWithBlockhashLifetime,
   createTransactionMessage,
+  createTransactionPlanExecutor,
+  createTransactionPlanner,
   getSignatureFromTransaction,
   pipe,
   sendAndConfirmTransactionFactory,
@@ -11,6 +13,7 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
   type Instruction,
+  type InstructionPlan,
   type TransactionSigner,
 } from '@solana/kit';
 import { getRpc, getRpcSubscriptions } from './config';
@@ -40,4 +43,43 @@ export async function sendInstructions(
   const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
   await sendAndConfirm(signedTx, { commitment: 'confirmed' });
   return getSignatureFromTransaction(signedTx);
+}
+
+/**
+ * Execute an InstructionPlan (the token-2022 confidential helpers return
+ * these): the planner packs instructions into as few transactions as fit,
+ * respecting plan structure — e.g. a non-divisible sequence stays atomic in
+ * one transaction. Returns the signature of every confirmed transaction.
+ */
+export async function executeInstructionPlan(
+  feePayer: TransactionSigner,
+  plan: InstructionPlan,
+): Promise<string[]> {
+  const rpc = getRpc();
+  const rpcSubscriptions = getRpcSubscriptions();
+  const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
+
+  const planner = createTransactionPlanner({
+    createTransactionMessage: () =>
+      pipe(createTransactionMessage({ version: 0 }), (m) =>
+        setTransactionMessageFeePayerSigner(feePayer, m),
+      ),
+  });
+
+  const signatures: string[] = [];
+  const executor = createTransactionPlanExecutor({
+    executeTransactionMessage: async (_context, message) => {
+      const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+      const signedTx = await signTransactionMessageWithSigners(
+        setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, message),
+      );
+      assertIsTransactionWithBlockhashLifetime(signedTx);
+      await sendAndConfirm(signedTx, { commitment: 'confirmed' });
+      signatures.push(getSignatureFromTransaction(signedTx));
+      return signedTx;
+    },
+  });
+
+  await executor(await planner(plan));
+  return signatures;
 }

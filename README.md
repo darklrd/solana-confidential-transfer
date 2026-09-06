@@ -63,6 +63,9 @@ Tests (`pnpm test`) run the full public lifecycle against devnet on a fresh thro
 | `04-inspect-account` | Decode any token account: balance, state, and every extension present on the account and its mint |
 | `05-create-confidential-mint` | Create a mint with the ConfidentialTransferMint extension (must be set at creation — a public mint can never be upgraded). Auto-approve by default; `--manual-approve` to gate new accounts behind the authority |
 | `06-inspect-mint` | Decode any mint; renders the public and confidential mints side by side — identical except for the one extension everything confidential hangs off |
+| `07-generate-keys` | Deterministically derive the owner's per-mint ElGamal and AES keys from a wallet signature; no additional secret files |
+| `08-configure-account` | Create/reallocate the owner's token account and configure its ConfidentialTransferAccount extension |
+| `09-inspect-confidential-account` | Decode the confidential account's ciphertext fields, credit counters, and approval state |
 
 ## Roadmap
 
@@ -70,7 +73,7 @@ Tests (`pnpm test`) run the full public lifecycle against devnet on a fresh thro
 |---|---|---|
 | 0 | Environment + transparent baseline (public mint, transfer, inspector v0) | ✅ done |
 | 1 | Confidential-capable mint + mint inspector | ✅ done |
-| 2 | ElGamal/AES keys + configure confidential account | ⏳ next |
+| 2 | ElGamal/AES keys + configure confidential account | ✅ done |
 | 3 | Deposit (public → pending) + **owner decryption** of your own balance | — |
 | 4 | Apply (pending → available): why the two-step model exists | — |
 | 5 | The confidential transfer itself: three ZK proofs, context-state accounts | — |
