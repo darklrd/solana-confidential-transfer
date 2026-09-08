@@ -12,6 +12,7 @@ id.json
 
 # === Run outputs (per-cluster addresses created by scripts) ===
 artifacts/
+snapshots/
 
 # === Node / build ===
 node_modules/
