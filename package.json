@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "check-env": "tsx scripts/00-check-env.ts",
+    "ui": "tsx ui/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

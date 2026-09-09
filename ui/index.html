@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidential Transfer Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --inset: #0d1117; --border: #30363d; --border-soft: #21262d;
+    --text: #e6edf3; --text-2: #b6bec9; --muted: #8b949e; --faint: #6e7681;
+    --blue: #58a6ff; --blue-btn: #1f6feb; --green: #3fb950; --amber: #d29922; --violet: #a371f7;
+    --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { color: #79c0ff; text-decoration: underline; }
+  header { display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 24px; border-bottom: 1px solid var(--border-soft); gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; }
+  .chips { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: #1c2129; border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--muted); }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .mono { font-family: var(--mono); }
+  main { display: grid; grid-template-columns: 280px minmax(420px, 1fr) 500px; gap: 20px; padding: 20px 24px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; }
+  .step { display: flex; gap: 10px; padding: 8px 12px; border-radius: 6px; align-items: flex-start; cursor: pointer; border: 1px solid transparent; }
+  .step:hover { background: #1c2129; }
+  .step.selected { background: #388bfd1a; border-color: #388bfd4d; }
+  .step.locked { opacity: 0.55; }
+  .step .icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; font-weight: 600; }
+  .icon.done { border: 1px solid #2ea04366; background: #2ea0431a; }
+  .icon.next { background: var(--blue-btn); color: #fff; }
+  .icon.todo { border: 1px solid var(--border); color: var(--faint); }
+  .step .name { font-weight: 500; font-size: 13px; }
+  .step .cap { font-size: 12px; color: var(--muted); }
+  .step .txlink { font-size: 11px; font-family: var(--mono); }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  p.body { font-size: 13px; line-height: 1.55; color: var(--text-2); margin: 0; }
+  .inset { background: var(--inset); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; }
+  .inset .label { margin-bottom: 6px; }
+  .inset p { font-size: 12.5px; line-height: 1.55; color: #9da7b3; margin: 0; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .btn { height: 44px; background: var(--blue-btn); color: #fff; border: 0; border-radius: 6px; font-size: 14px; font-weight: 600; font-family: var(--sans); cursor: pointer; width: 100%; }
+  .btn:hover { background: #388bfd; }
+  .btn:disabled { background: #21262d; color: var(--faint); cursor: not-allowed; }
+  .btn-note { font-size: 12px; color: var(--faint); }
+  input[type="number"] { background: var(--inset); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 14px; padding: 10px 12px; width: 110px; }
+  .toggle { display: flex; background: var(--inset); border: 1px solid var(--border); border-radius: 6px; padding: 2px; gap: 2px; }
+  .toggle button { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 500; color: var(--muted); background: none; border: 0; cursor: pointer; font-family: var(--sans); }
+  .toggle button.active { background: #2d333b; color: var(--text); }
+  .toggle button.active.owner { background: #a371f726; color: #c9b8f0; }
+  .card { border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; background: var(--inset); display: flex; flex-direction: column; gap: 8px; }
+  .card .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card .title { font-size: 13px; font-weight: 600; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 2px 9px; font-size: 11px; white-space: nowrap; }
+  .tag.green { border: 1px solid #3fb95066; background: #3fb95014; color: var(--green); }
+  .tag.amber { border: 1px solid #d2992266; background: #d2992214; color: var(--amber); }
+  .tag.violet { border: 1px solid #a371f766; background: #a371f714; color: var(--violet); }
+  .big { font-size: 24px; font-weight: 600; font-family: var(--mono); }
+  .big .unit { font-size: 14px; color: var(--muted); }
+  .cipher { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .cipher .k { font-size: 11px; color: var(--faint); width: 52px; flex-shrink: 0; font-family: var(--mono); }
+  .cipher .v { font-size: 12px; color: #9da7b3; font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .cipher.dim { opacity: 0.45; }
+  .cap { font-size: 12px; color: var(--faint); }
+  .changed { display: inline-flex; align-items: center; gap: 4px; color: var(--amber); font-size: 11px; }
+  .changed::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+  .counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .counters .num { font-size: 16px; font-weight: 600; font-family: var(--mono); display: flex; align-items: center; gap: 5px; }
+  .counters .lbl { font-size: 11px; color: var(--faint); }
+  .txrow { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .txrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .txrow .dot.err { background: #f85149; }
+  .txrow .ixname { font-size: 12.5px; font-weight: 500; font-family: var(--mono); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .txrow .sig { font-size: 12px; font-family: var(--mono); white-space: nowrap; }
+  .txrow .time { font-size: 11px; color: var(--faint); white-space: nowrap; }
+  .banner { border: 1px solid #a371f766; background: #a371f712; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #c9b8f0; line-height: 1.5; }
+  .banner.error { border-color: #f8514966; background: #f8514912; color: #ffa198; }
+  #toast { position: fixed; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 10; max-width: 420px; }
+  .toast { background: #1c2129; border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 6px; padding: 10px 14px; font-size: 13px; box-shadow: 0 8px 24px #00000066; }
+  .toast.error { border-left-color: #f85149; }
+  .ghost { color: var(--faint); font-size: 12px; }
+  .refresh { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
+  .refresh:hover { color: var(--text); border-color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3 4.5 6v5.2c0 4.6 3.2 8 7.5 9.8 4.3-1.8 7.5-5.2 7.5-9.8V6L12 3Z" stroke="#58a6ff" stroke-width="1.6" stroke-linejoin="round"></path><rect x="9" y="10" width="6" height="4.6" rx="1" stroke="#58a6ff" stroke-width="1.4"></rect><path d="M10.4 10V8.8a1.6 1.6 0 0 1 3.2 0V10" stroke="#58a6ff" stroke-width="1.4"></path></svg>
+    Confidential Transfer Lab
+    <span class="chip"><span class="dot"></span><span id="cluster">…</span></span>
+  </div>
+  <div class="chips" id="header-chips"></div>
+</header>
+
+<main>
+  <div class="panel" style="padding: 14px 10px;">
+    <div class="label" style="padding: 0 12px 8px;">Lifecycle</div>
+    <div id="stepper"></div>
+  </div>
+
+  <div class="stack">
+    <div class="panel stack" id="stepcard"><span class="ghost">Loading…</span></div>
+    <div class="panel stack" style="gap: 10px;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div class="label">Transactions</div>
+        <div class="ghost" id="tx-note">via getSignaturesForAddress · account + mint</div>
+      </div>
+      <div id="txlist" class="stack" style="gap: 8px;"><span class="ghost">Loading…</span></div>
+    </div>
+  </div>
+
+  <div class="panel stack" style="gap: 12px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div class="label">Account state</div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="refresh" onclick="refresh()">Refresh</button>
+        <div class="toggle">
+          <button id="view-observer" onclick="setView('observer')">Observer</button>
+          <button id="view-owner" onclick="setView('owner')">Owner</button>
+        </div>
+      </div>
+    </div>
+    <div id="statebody"><span class="ghost">Loading…</span></div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+let state = null;        // last /api/state payload
+let changed = new Set(); // field groups changed by the last action
+let view = 'observer';
+let selectedStep = null;
+let busy = false;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short = (a) => a ? `${a.slice(0, 6)}…${a.slice(-5)}` : '';
+const shortSig = (s) => `${s.slice(0, 5)}…${s.slice(-5)}`;
+const cipherShort = (b64) => {
+  const s = b64.replace(/=+$/, '');
+  return [...s].every((c) => c === 'A') ? `(all zero — encryption of 0)` : `${s.slice(0, 44)}…`;
+};
+const changedChip = (key) => changed.has(key) ? '<span class="changed">changed</span>' : '';
+
+function toast(html, isError) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.innerHTML = html;
+  $('toast').appendChild(el);
+  setTimeout(() => el.remove(), 12000);
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body;
+}
+
+// ---- lifecycle steps ----------------------------------------------------
+const bi = (v) => BigInt(v ?? 0);
+function stepStatuses(s) {
+  const c = s.inspection.confidential;
+  const o = s.owner;
+  const configured = !!(c && c.approved);
+  const sawCredits = c && (bi(c.pendingBalanceCreditCounter) > 0n || bi(c.actualPendingBalanceCreditCounter) > 0n || (o && (bi(o.pendingRaw) > 0n || bi(o.availableRaw) > 0n)));
+  const applied = o && bi(o.availableRaw) > 0n;
+  const pendingNow = o && bi(o.pendingRaw) > 0n;
+  return {
+    mint: 'done', keys: 'done',
+    configure: configured ? 'done' : 'next',
+    deposit: sawCredits ? 'done' : 'next',
+    apply: pendingNow ? 'next' : (applied ? 'done' : 'todo'),
+    transfer: 'locked', withdraw: 'locked',
+  };
+}
+const STEPS = [
+  { id: 'mint', n: 1, name: 'Create confidential mint', cap: () => `${sym()} · extension set at creation` },
+  { id: 'keys', n: 2, name: 'Derive keys', cap: () => 'ElGamal + AES from a wallet signature', note: 'off-chain — no transaction' },
+  { id: 'configure', n: 3, name: 'Configure account', cap: () => 'account approved for confidential use' },
+  { id: 'deposit', n: 4, name: 'Deposit', cap: () => 'public → pending' },
+  { id: 'apply', n: 5, name: 'Apply pending', cap: () => 'pending → available' },
+  { id: 'transfer', n: 6, name: 'Confidential transfer', cap: () => 'equality + validity + range proofs' },
+  { id: 'withdraw', n: 7, name: 'Withdraw', cap: () => 'available → public' },
+];
+const sym = () => state?.inspection.mintInfo.symbol ?? 'tokens';
+
+function renderStepper() {
+  const st = stepStatuses(state);
+  $('stepper').innerHTML = STEPS.map((s) => {
+    const status = st[s.id];
+    const icon = status === 'done'
+      ? '<div class="icon done"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" stroke="#3fb950" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></div>'
+      : status === 'locked'
+        ? '<div class="icon todo"><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.5"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.5"></path></svg></div>'
+        : `<div class="icon ${status === 'next' ? 'next' : 'todo'}">${s.n}</div>`;
+    return `<div class="step${selectedStep === s.id ? ' selected' : ''}${status === 'locked' ? ' locked' : ''}" onclick="selectStep('${s.id}')">
+      ${icon}
+      <div style="min-width: 0;">
+        <div class="name">${esc(s.name)}</div>
+        <div class="cap">${esc(s.cap())}</div>
+        ${s.note ? `<div class="cap" style="font-size: 11px; color: var(--faint);">${esc(s.note)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- center: step detail cards ------------------------------------------
+function selectStep(id) { selectedStep = id; renderStepper(); renderStepCard(); }
+
+function renderStepCard() {
+  const i = state.inspection;
+  const c = i.confidential;
+  const step = STEPS.find((s) => s.id === selectedStep);
+  const H = (label, title) => `<div class="label">${label}</div><h1>${title}</h1>`;
+  const cards = {
+    mint: () => H('Step 1 of 7', 'Create confidential mint') + `
+      <p class="body">A mint must carry the <span class="mono">ConfidentialTransferMint</span> extension from the moment it is created — a public mint can never be upgraded. This mint (<a href="${esc(state.explorer.mint)}" target="_blank" class="mono">${esc(short(i.mint))}</a>) auto-approves new accounts and names no auditor, so only account owners can decrypt amounts.</p>
+      <div class="inset"><div class="label">Already done</div><p>Created by script 05. Mint extensions: <span class="mono">${esc(i.mintInfo.extensions.join(', '))}</span></p></div>`,
+    keys: () => H('Step 2 of 7 · off-chain', 'Derive ElGamal + AES keys') + `
+      <p class="body">There are no key files. Both keys derive from a wallet signature over a deterministic, domain-separated message seeded with <span class="mono">(owner, mint)</span> — the same wallet always re-derives the same keys, and a different mint yields different keys. The ElGamal pubkey goes on-chain at configure time; everything secret stays in memory.</p>
+      <div class="inset"><div class="label">Your ElGamal pubkey (public)</div><p class="mono">${esc(c ? c.elgamalPubkey : '(account not configured yet)')}</p></div>`,
+    configure: () => H('Step 3 of 7', 'Configure account') + `
+      <p class="body">The token account is reallocated to fit the <span class="mono">ConfidentialTransferAccount</span> extension, then configured with your ElGamal pubkey and an initial AES-encrypted zero balance. A ZK pubkey-validity proof shows the ElGamal key is well-formed.</p>
+      <div class="inset"><div class="label">Status</div><p>${c ? (c.approved ? '✓ configured and approved' : 'configured — awaiting mint-authority approval') : 'not configured — run script 08'}</p></div>`,
+    deposit: () => H('Step 4 of 7 · amount is public', 'Deposit: public → pending') + `
+      <p class="body">Deposit moves value from the ordinary public balance into the encrypted <span style="color: var(--amber);">pending</span> balance. This is the transparency boundary: the deposit amount is visible in the transaction, because it leaves the public column. Afterward, the pending ciphertexts change homomorphically and the credit counter ticks up.</p>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <input type="number" id="deposit-amount" value="1" min="1" max="1000" step="1"> <span class="cap">${esc(sym())} (whole tokens; auto-mints public funds if short)</span>
+      </div>
+      <button class="btn" id="btn-deposit" onclick="runAction('deposit')">Run ConfidentialDeposit</button>
+      <div class="btn-note">Sends one transaction to ${esc(state.cluster)}, signed with your local wallet. Keys never leave the server process.</div>`,
+    apply: () => {
+      const pending = state.owner ? state.owner.pendingUi : '?';
+      const nothing = !state.owner || BigInt(state.owner.pendingRaw) === 0n;
+      return H('Step 5 of 7 · no ZK proof needed', 'Apply pending balance') + `
+      <p class="body">Deposits and incoming transfers land in <span style="color: var(--amber);">pending</span> — ciphertext you own but cannot spend yet. <span class="mono">ApplyPendingBalance</span> folds pending into <span style="color: var(--violet);">available</span> and zeroes the pending credit counter. Only your AES key can compute the new decryptable balance, so no proof is required.</p>
+      <div class="inset"><div class="label">Why two steps?</div><p>Incoming credits rewrite your ciphertext. If they landed straight in available, a transfer proof you were building could suddenly target stale state and fail. Pending absorbs credits; you fold them in at a moment you choose.</p></div>
+      <div class="inset"><div class="label">Will apply now</div><p class="mono">${esc(pending)} ${esc(sym())} pending · expectedPendingCreditCounter = ${esc(c ? c.pendingBalanceCreditCounter : '?')}</p></div>
+      <button class="btn" id="btn-apply" onclick="runAction('apply')" ${nothing ? 'disabled' : ''}>${nothing ? 'Nothing pending — deposit first' : 'Run ApplyPendingBalance'}</button>
+      <div class="btn-note">Sends one transaction to ${esc(state.cluster)}, signed with your local wallet. Keys never leave the server process.</div>`;
+    },
+    transfer: () => H('Step 6 of 7 · not built yet', 'Confidential transfer') + `
+      <p class="body">The main event, coming in Phase 5: moving tokens between two confidential accounts with the amount hidden. The sender proves — without revealing anything — that the encrypted amount is consistent (equality proof), well-formed for sender, receiver, and auditor (grouped-ciphertext validity proof), and non-negative with no overflow (batched range proof). Each proof is verified into a context-state account before the transfer instruction runs.</p>`,
+    withdraw: () => H('Step 7 of 7 · not built yet', 'Withdraw: available → public') + `
+      <p class="body">Coming in Phase 6: the reverse boundary crossing. Withdrawing reveals the amount again and needs equality + range proofs to show your encrypted available balance really covers it.</p>`,
+  };
+  $('stepcard').innerHTML = cards[selectedStep] ? cards[selectedStep]() : '';
+}
+
+// ---- actions -------------------------------------------------------------
+async function runAction(kind) {
+  if (busy) return;
+  busy = true;
+  const btn = $(kind === 'apply' ? 'btn-apply' : 'btn-deposit');
+  const oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending transaction…';
+  const before = comparable(state);
+  try {
+    const body = kind === 'deposit' ? JSON.stringify({ amount: $('deposit-amount').value }) : '{}';
+    const r = await api(`/api/${kind}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body });
+    let html = `✓ ${kind === 'apply' ? 'ApplyPendingBalance' : 'ConfidentialDeposit'} confirmed · <a href="${esc(r.explorer)}" target="_blank" class="mono">${esc(shortSig(r.signature))}</a>`;
+    if (r.fundingExplorer) html += `<div class="cap">plus a public mint-to top-up: <a href="${esc(r.fundingExplorer)}" target="_blank" class="mono">${esc(shortSig(r.fundingSignature))}</a></div>`;
+    toast(html);
+    await refresh(before);
+  } catch (e) {
+    toast(`✗ ${esc(e.message)}`, true);
+    btn.textContent = oldLabel;
+  } finally {
+    busy = false;
+    btn.disabled = false;
+  }
+}
+
+// ---- right panel: account state -----------------------------------------
+function setView(v) { view = v; renderState(); }
+
+function comparable(s) {
+  const c = s?.inspection?.confidential;
+  return c ? {
+    public: s.inspection.amountRaw, pending: c.pendingBalanceLow + c.pendingBalanceHigh,
+    available: c.availableBalance + c.decryptableAvailableBalance,
+    counter: c.pendingBalanceCreditCounter,
+    expected: c.expectedPendingBalanceCreditCounter, actual: c.actualPendingBalanceCreditCounter,
+  } : null;
+}
+
+function renderState() {
+  const i = state.inspection;
+  const c = i.confidential;
+  const o = state.owner;
+  $('view-observer').className = view === 'observer' ? 'active' : '';
+  $('view-owner').className = view === 'owner' ? 'active owner' : '';
+  if (!c) {
+    $('statebody').innerHTML = '<div class="banner error">This token account has no ConfidentialTransferAccount extension yet — run script 08.</div>';
+    return;
+  }
+  const owner = view === 'owner';
+  const lock = '<svg width="11" height="11" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.5"></rect><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" stroke="currentColor" stroke-width="1.5"></path></svg>';
+  const parts = [];
+  parts.push(`<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; margin-bottom: 12px;">
+    <a class="mono" href="${esc(state.explorer.account)}" target="_blank">${esc(short(i.address))}</a>
+    <span class="tag green">${c.approved ? 'approved' : 'NOT approved'}</span>
+    <span class="tag" style="border: 1px solid var(--border); color: var(--muted);">ConfidentialTransferAccount</span>
+  </div>`);
+  if (owner) parts.push('<div class="banner" style="margin-bottom: 12px;">Keys re-derived from a wallet signature — decryption happens in the local server process, never in the browser, never on disk.</div>');
+  if (owner && state.ownerError) parts.push(`<div class="banner error" style="margin-bottom: 12px;">${esc(state.ownerError)}</div>`);
+
+  parts.push(`<div class="card" style="margin-bottom: 12px;">
+    <div class="head"><span class="title">Public balance</span><span class="tag green">visible to everyone</span></div>
+    <div class="big">${esc(i.amountUi)} <span class="unit">${esc(sym())}</span></div>
+    <div class="cap">raw ${esc(i.amountRaw)} · leaves here on deposit, returns on withdraw ${changedChip('public')}</div>
+  </div>`);
+
+  if (owner && o) {
+    parts.push(`<div class="card" style="margin-bottom: 12px;">
+      <div class="head"><span class="title">Pending balance</span><span class="tag violet">${lock} decrypted — owner only</span></div>
+      <div class="big">${esc(o.pendingUi)} <span class="unit">${esc(sym())}</span></div>
+      <div class="cap">raw ${esc(o.pendingRaw)} · pending = lo + (hi &lt;&lt; 16) · ElGamal discrete-log recovery ${changedChip('pending')}</div>
+      <div class="cipher dim"><span class="k">lo</span><span class="v">${esc(cipherShort(c.pendingBalanceLow))}</span></div>
+      <div class="cipher dim"><span class="k">hi</span><span class="v">${esc(cipherShort(c.pendingBalanceHigh))}</span></div>
+    </div>
+    <div class="card" style="margin-bottom: 12px;">
+      <div class="head"><span class="title">Available balance</span><span class="tag violet">${lock} decrypted — owner only</span></div>
+      <div class="big">${esc(o.availableUi)} <span class="unit">${esc(sym())}</span></div>
+      <div class="cap">raw ${esc(o.availableRaw)} · read from the AES decryptableAvailableBalance ${changedChip('available')}</div>
+      <div class="cipher dim"><span class="k">ElGamal</span><span class="v">${esc(cipherShort(c.availableBalance))}</span></div>
+      <div class="cipher dim"><span class="k">AES</span><span class="v">${esc(cipherShort(c.decryptableAvailableBalance))}</span></div>
+    </div>`);
+  } else {
+    parts.push(`<div class="card" style="margin-bottom: 12px;">
+      <div class="head"><span class="title">Pending balance</span><span class="tag amber">${lock} encrypted — twisted ElGamal</span></div>
+      <div class="cipher"><span class="k">lo</span><span class="v">${esc(cipherShort(c.pendingBalanceLow))}</span></div>
+      <div class="cipher"><span class="k">hi</span><span class="v">${esc(cipherShort(c.pendingBalanceHigh))}</span></div>
+      <div class="cap">64-byte ciphertexts · deposits add homomorphic offsets ${changedChip('pending')}</div>
+    </div>
+    <div class="card" style="margin-bottom: 12px;">
+      <div class="head"><span class="title">Available balance</span><span class="tag amber">${lock} encrypted</span></div>
+      <div class="cipher"><span class="k">ElGamal</span><span class="v">${esc(cipherShort(c.availableBalance))}</span></div>
+      <div class="cipher"><span class="k">AES</span><span class="v">${esc(cipherShort(c.decryptableAvailableBalance))}</span></div>
+      <div class="cap">only apply, transfer, and withdraw touch these ${changedChip('available')}</div>
+    </div>`);
+  }
+
+  parts.push(`<div class="card" style="margin-bottom: 12px;">
+    <div class="counters">
+      <div><div class="num">${esc(c.pendingBalanceCreditCounter)} ${changedChip('counter')}</div><div class="lbl">pending credits</div></div>
+      <div><div class="num">${esc(c.expectedPendingBalanceCreditCounter)} ${changedChip('expected')}</div><div class="lbl">expected (last apply)</div></div>
+      <div><div class="num">${esc(c.actualPendingBalanceCreditCounter)} ${changedChip('actual')}</div><div class="lbl">actual (last apply)</div></div>
+      <div><div class="num">${esc(c.maximumPendingBalanceCreditCounter)}</div><div class="lbl">max</div></div>
+    </div>
+    <div class="cap">apply must state the credit count it has seen — the race guard</div>
+  </div>`);
+
+  parts.push(`<div class="cap">${owner
+    ? 'Same bytes as the observer view — plus your keys.'
+    : 'This is everything an explorer or RPC node can see — amounts appear nowhere.'}</div>`);
+  $('statebody').innerHTML = parts.join('');
+}
+
+// ---- transactions --------------------------------------------------------
+async function renderTransactions() {
+  try {
+    const { transactions } = await api('/api/transactions');
+    $('txlist').innerHTML = transactions.length === 0
+      ? '<span class="ghost">No transactions found.</span>'
+      : transactions.map((t) => `<div class="txrow">
+          <div class="dot${t.failed ? ' err' : ''}"></div>
+          <div class="ixname" title="${esc(t.instructions.join(' · '))}">${esc(t.instructions.join(' · ') || 'transaction')}</div>
+          <a class="sig" href="${esc(t.explorer)}" target="_blank">${esc(shortSig(t.signature))}</a>
+          <div class="time">${t.time ? esc(t.time.slice(0, 16).replace('T', ' ')) + ' UTC' : ''}</div>
+        </div>`).join('');
+  } catch (e) {
+    $('txlist').innerHTML = `<span class="ghost">Could not load transactions: ${esc(e.message)}</span>`;
+  }
+}
+
+// ---- top-level -----------------------------------------------------------
+async function refresh(before) {
+  try {
+    state = await api('/api/state');
+    const now = comparable(state);
+    changed = new Set();
+    if (before && now) for (const k of Object.keys(now)) if (before[k] !== now[k]) changed.add(k);
+    $('cluster').textContent = state.cluster;
+    const i = state.inspection;
+    $('header-chips').innerHTML = `
+      <span class="chip"><span style="color: var(--text); font-weight: 500;">${esc(sym())}</span>&nbsp;· mint <a class="mono" href="${esc(state.explorer.mint)}" target="_blank">${esc(short(i.mint))}</a></span>
+      <span class="chip">account <a class="mono" href="${esc(state.explorer.account)}" target="_blank">${esc(short(i.address))}</a></span>`;
+    if (!selectedStep) {
+      const st = stepStatuses(state);
+      selectedStep = ['configure', 'apply', 'deposit'].find((id) => st[id] === 'next') ?? 'apply';
+    }
+    renderStepper();
+    renderStepCard();
+    renderState();
+  } catch (e) {
+    $('stepcard').innerHTML = `<div class="banner error">Could not reach the lab server: ${esc(e.message)}</div>`;
+  }
+  renderTransactions();
+}
+refresh();
+</script>
+</body>
+</html>

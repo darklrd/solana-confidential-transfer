@@ -55,6 +55,9 @@ pnpm tsx scripts/08-configure-account.ts
 pnpm tsx scripts/09-inspect-confidential-account.ts
 pnpm tsx scripts/10-deposit.ts
 pnpm tsx scripts/11-decrypt-my-balance.ts
+
+# 6. Then explore the same account interactively
+pnpm ui                # Confidential Transfer Lab → http://127.0.0.1:8787
 ```
 
 Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, deposit, decryption, snapshot, and diff behavior against devnet. Set `SKIP_NETWORK_TESTS=1` to run only deterministic offline coverage.
@@ -76,6 +79,21 @@ Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, 
 | `10-deposit` | Mint setup funds if needed, then move one public token into encrypted pending state; save public before/after snapshots and render the diff |
 | `11-decrypt-my-balance` | Re-derive the owner's keys in memory and decrypt pending plus available balances into human-readable amounts |
 
+## The Lab (interactive UI)
+
+`pnpm ui` starts the **Confidential Transfer Lab** at `http://127.0.0.1:8787` — a
+minimal local web UI over the same `src/` modules the scripts use (Node's
+built-in `http` plus vanilla JS; zero added dependencies, no build step). It
+shows the lifecycle as a stepper, runs **Deposit** and **Apply** against devnet
+with one click, links every real transaction to the explorer, and renders the
+account in two switchable views: **Observer** (the raw ciphertexts anyone can
+see) and **Owner** (the same bytes decrypted in memory).
+
+Security model: the server binds to `127.0.0.1` only and refuses to run against
+mainnet. The wallet keypair and the derived ElGamal/AES keys live only in the
+server process — the browser receives public chain state and decrypted balance
+*numbers*, never key material.
+
 ## Roadmap
 
 | Phase | Content | Status |
@@ -84,10 +102,10 @@ Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, 
 | 1 | Confidential-capable mint + mint inspector | ✅ done |
 | 2 | ElGamal/AES keys + configure confidential account | ✅ done |
 | 3 | Deposit (public → pending) + **owner decryption** of your own balance | ✅ done |
-| 4 | Apply (pending → available): why the two-step model exists | — |
+| 4 | Apply (pending → available): why the two-step model exists | ✅ done — live in the Lab; lesson script `12` pending |
 | 5 | The confidential transfer itself: three ZK proofs, context-state accounts | — |
 | 6 | Withdraw + auditor decryption + observer/owner/auditor three-views | — |
-| 7 | Visual playground over saved snapshots | — |
+| 7 | Visual playground over saved snapshots | partially — the Lab (above) covers live interactive exploration |
 
 ## Phase 3: crossing the public/confidential boundary
 
@@ -104,9 +122,20 @@ per-mint keys, decrypts the pending ElGamal limbs and AES available balance in
 memory, and prints the amount. Decrypted balances and derivation material are
 never written to snapshots.
 
+## Phase 4: why pending → available is a separate step
+
+Incoming credits (deposits and, later, transfers) land in the **pending**
+balance and rewrite its ciphertext. If they landed directly in **available**,
+an incoming credit could invalidate a spend proof you were building against
+that ciphertext. So pending absorbs credits, and `ApplyPendingBalance` — run
+at a moment you choose — folds pending into available and zeroes the pending
+credit counter. The instruction states the credit count it has seen (the race
+guard), and it needs no ZK proof: only your AES key can compute the new
+decryptable available balance.
+
 ## Key handling
 
-Private keys live in the gitignored `keys/` directory, created by `scripts/create-wallet.sh` — which refuses to write a key to any path that isn't gitignored, validates names, and never prints secret material. Confidential ElGamal/AES keys are re-derived from domain-separated wallet signatures and remain in memory. Never log, store, or transmit those derivation signatures: possession of one can reconstruct the corresponding confidential secret key. Runtime artifacts and snapshots are gitignored; persisted snapshots intentionally reject decrypted balances. Never fund these development keypairs with mainnet assets.
+Private keys live in the gitignored `keys/` directory, created by `scripts/create-wallet.sh` — which refuses to write a key to any path that isn't gitignored, validates names, and never prints secret material. Confidential ElGamal/AES keys are re-derived from domain-separated wallet signatures and remain in memory. Never log, store, or transmit those derivation signatures: possession of one can reconstruct the corresponding confidential secret key. Runtime artifacts and snapshots are gitignored; persisted snapshots intentionally reject decrypted balances. The Lab's local server follows the same rules: it binds to `127.0.0.1`, refuses mainnet, and keeps all key material in its own process. Never fund these development keypairs with mainnet assets.
 
 ## License
 

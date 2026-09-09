@@ -29,3 +29,6 @@ build/
 # === Local-only docs (not committed) ===
 docs/
 versions.md
+
+# === Local design mockups (not committed) ===
+design/
