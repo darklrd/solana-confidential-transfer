@@ -55,12 +55,13 @@ pnpm tsx scripts/08-configure-account.ts
 pnpm tsx scripts/09-inspect-confidential-account.ts
 pnpm tsx scripts/10-deposit.ts
 pnpm tsx scripts/11-decrypt-my-balance.ts
+pnpm tsx scripts/12-apply-pending.ts
 
 # 6. Then explore the same account interactively
 pnpm ui                # Confidential Transfer Lab → http://127.0.0.1:8787
 ```
 
-Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, deposit, decryption, snapshot, and diff behavior against devnet. Set `SKIP_NETWORK_TESTS=1` to run only deterministic offline coverage.
+Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, deposit, apply, decryption, snapshot, and diff behavior against devnet. Set `SKIP_NETWORK_TESTS=1` to run only deterministic offline coverage.
 
 ## Scripts
 
@@ -78,6 +79,7 @@ Tests (`pnpm test`) cover the public lifecycle plus confidential mint, account, 
 | `09-inspect-confidential-account` | Decode the confidential account's ciphertext fields, credit counters, and approval state |
 | `10-deposit` | Mint setup funds if needed, then move one public token into encrypted pending state; save public before/after snapshots and render the diff |
 | `11-decrypt-my-balance` | Re-derive the owner's keys in memory and decrypt pending plus available balances into human-readable amounts |
+| `12-apply-pending` | Fold encrypted pending into available with `ApplyPendingBalance` (no ZK proof); snapshot before/after, diff the owner-decrypted view, and check the expected/actual credit-counter race guard |
 
 ## The Lab (interactive UI)
 
@@ -102,7 +104,7 @@ server process — the browser receives public chain state and decrypted balance
 | 1 | Confidential-capable mint + mint inspector | ✅ done |
 | 2 | ElGamal/AES keys + configure confidential account | ✅ done |
 | 3 | Deposit (public → pending) + **owner decryption** of your own balance | ✅ done |
-| 4 | Apply (pending → available): why the two-step model exists | ✅ done — live in the Lab; lesson script `12` pending |
+| 4 | Apply (pending → available): why the two-step model exists | ✅ done — lesson script `12` + the Lab share `src/apply.ts` |
 | 5 | The confidential transfer itself: three ZK proofs, context-state accounts | — |
 | 6 | Withdraw + auditor decryption + observer/owner/auditor three-views | — |
 | 7 | Visual playground over saved snapshots | partially — the Lab (above) covers live interactive exploration |
@@ -132,6 +134,12 @@ at a moment you choose — folds pending into available and zeroes the pending
 credit counter. The instruction states the credit count it has seen (the race
 guard), and it needs no ZK proof: only your AES key can compute the new
 decryptable available balance.
+
+`12-apply-pending` runs that step: it snapshots the account, builds the
+instruction from the same state, applies, and checks the diff: pending reset to
+the zero ciphertext, credit counter `N → 0`, expected/actual both `N`, and the
+owner-decrypted available balance up by exactly the pending amount. Saved
+snapshots hold the observer view only; the decrypted rows stay in memory.
 
 ## Key handling
 

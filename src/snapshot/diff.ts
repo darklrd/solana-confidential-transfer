@@ -13,7 +13,10 @@ export type CiphertextChange = {
   before: string;
   after: string;
   changed: boolean;
+  /** Was the all-zero placeholder, now real ciphertext (e.g. first deposit). */
   appeared: boolean;
+  /** Was real ciphertext, now the all-zero placeholder (e.g. apply resets pending). */
+  cleared: boolean;
 };
 
 export type AccountSnapshotDiff = {
@@ -47,7 +50,8 @@ function numericChange(before: string, after: string): NumericChange {
   };
 }
 
-function isZeroCiphertext(value: string): boolean {
+/** The all-zero bytes Token-2022 uses for an untouched or reset balance. */
+export function isZeroCiphertext(value: string): boolean {
   const bytes = Buffer.from(value, 'base64');
   return bytes.length > 0 && bytes.every((byte) => byte === 0);
 }
@@ -59,6 +63,7 @@ function ciphertextChange(before: string, after: string): CiphertextChange {
     after,
     changed,
     appeared: changed && isZeroCiphertext(before) && !isZeroCiphertext(after),
+    cleared: changed && !isZeroCiphertext(before) && isZeroCiphertext(after),
   };
 }
 
@@ -161,8 +166,10 @@ export function renderAccountSnapshotDiff(
       diff.confidential.pendingBalanceLow.changed || diff.confidential.pendingBalanceHigh.changed;
     const pendingAppeared =
       diff.confidential.pendingBalanceLow.appeared || diff.confidential.pendingBalanceHigh.appeared;
+    const pendingCleared =
+      diff.confidential.pendingBalanceLow.cleared || diff.confidential.pendingBalanceHigh.cleared;
     console.log(
-      `│  pending cipher : ${pendingAppeared ? 'appeared' : pendingChanged ? 'changed' : 'unchanged'} (amount hidden from observer)`,
+      `│  pending cipher : ${pendingAppeared ? 'appeared' : pendingCleared ? 'cleared' : pendingChanged ? 'changed' : 'unchanged'} (amount hidden from observer)`,
     );
     console.log(
       `│  available cipher: ${diff.confidential.availableBalance.changed ? 'changed' : 'unchanged'}`,
@@ -170,6 +177,17 @@ export function renderAccountSnapshotDiff(
     console.log(
       `│  pending credits: ${diff.confidential.pendingCreditCounter.before} → ${diff.confidential.pendingCreditCounter.after} (Δ ${diff.confidential.pendingCreditCounter.delta})`,
     );
+    // Only apply resets the pending counter; the same expected/actual as the
+    // previous apply is still worth showing, so key off the reset.
+    const { expectedPendingCreditCounter: expected, actualPendingCreditCounter: actual } =
+      diff.confidential;
+    if (
+      diff.confidential.pendingCreditCounter.direction === 'down' ||
+      expected.direction !== 'unchanged' ||
+      actual.direction !== 'unchanged'
+    ) {
+      console.log(`│  apply counters : expected ${expected.after}, actual ${actual.after} (race guard)`);
+    }
     if (diff.confidential.decrypted) {
       console.log(
         `│  ${diff.confidential.decrypted.by} pending : ${formatDelta(diff.confidential.decrypted.pending, after.decimals)} ${symbol}`,

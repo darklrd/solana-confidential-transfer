@@ -15,12 +15,11 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { address, type Address } from '@solana/kit';
 import {
-  fetchToken,
   getConfidentialDepositInstruction,
   getMintToCheckedInstruction,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from '@solana-program/token-2022';
-import { getApplyConfidentialPendingBalanceInstructionFromToken } from '@solana-program/token-2022/confidential';
+import { ApplyPreconditionError, prepareApplyPendingBalance } from '../src/apply';
 import { getArtifact } from '../src/artifacts';
 import { CLUSTER, explorerAddress, explorerTx, getRpc, loadKeypairSigner } from '../src/config';
 import { deriveConfidentialKeys, type ConfidentialKeys } from '../src/keys';
@@ -138,28 +137,17 @@ async function readTransactions() {
   return { transactions };
 }
 
-/** POST /api/apply — Phase 4: fold pending into available. No ZK proof needed. */
+/** POST /api/apply — Phase 4: fold pending into available. Same logic as script 12. */
 async function doApply() {
-  const inspection = await inspectTokenAccount(token);
-  if (!inspection.confidential) throw new HttpError(400, 'Account is not configured for confidential transfers.');
-  const { pendingRaw } = decryptConfidentialBalances(inspection, keys);
-  if (pendingRaw === 0n) throw new HttpError(400, 'Nothing pending to apply — run a deposit first.');
-
-  const fetched = await fetchToken(getRpc(), token);
-  const elgamalSecretKey = keys.elgamalKeypair.secret();
+  let prepared: Awaited<ReturnType<typeof prepareApplyPendingBalance>>;
   try {
-    const instruction = getApplyConfidentialPendingBalanceInstructionFromToken({
-      token,
-      tokenAccount: fetched.data,
-      authority: payer,
-      elgamalSecretKey,
-      aesKey: keys.aeKey,
-    });
-    const signature = await sendInstructions(payer, [instruction]);
-    return { signature, explorer: explorerTx(signature) };
-  } finally {
-    elgamalSecretKey.free();
+    prepared = await prepareApplyPendingBalance(token, payer, keys);
+  } catch (e) {
+    if (e instanceof ApplyPreconditionError) throw new HttpError(400, e.message);
+    throw e;
   }
+  const signature = await sendInstructions(payer, [prepared.instruction]);
+  return { signature, explorer: explorerTx(signature) };
 }
 
 /** POST /api/deposit — same logic as script 10, minus the snapshot files. */
